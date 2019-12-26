@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>canvas-rain</title>
+    <style>
+        body {
+            margin: 0;
+        }
+        .rain {
+            display: block;
+            background-color: black
+        }
+    </style>
+</head>
+
+<body>
+    <canvas class="rain"></canvas>
+    <script>
+        /*
+            程序员能力：
+                1、语言的掌握
+                2、项目思维
+            
+            1：让canvas元素大小和浏览器窗口宽高一致
+                1.1 获取canvas元素
+                1.2 获取浏览器窗口宽高，存起来
+                1.3 给canvas设置一个宽高
+                1.4 当浏览器窗口发生改变的时候需要重新设置canvas
+            2: 如何使用canvas绘制图形
+
+            3: 如何绘制会动的图形
+                动画：
+                 1s 播放多张静态的图片就能实现动画效果
+                 帧：描述的就是画面中物体的状态（位置，形状，大小，颜色...)
+                 1s 画60帧
+                 1/60s 一帧
+                 定时器
+            4: 绘制会动的雨滴
+                10mm
+                每隔多长实践下一滴：200ms
+        */
+
+
+        const canvas = document.querySelector(".rain")
+        const context = canvas.getContext("2d")
+        let w, h   // 屏幕的宽、高
+        const aRain = []
+        const frameRate = 1000 / 60 // 1000/60 ms 播放帧的间隔时间
+
+        // 1.1: 设置自适应canvas的宽高
+        ~~function setSize() {
+            window.onresize = setSize
+            w = window.innerWidth
+            h = window.innerHeight
+            canvas.width = w
+            canvas.height = h
+        }()
+
+        function random(min, max) {
+            return Math.random() * (max - min) + min
+        }
+        function Rain() {
+        }
+        Rain.prototype = {
+            init: function () {
+                this.x = random(10, w - 10)  // 水平位置 
+                this.y = random(0, 30)     // 竖直位置
+                this.endY = h - random(0, 50)
+                this.vY = random(80, 120) // 雨滴下降的初速度
+                this.balanece_v = 200    // 雨滴平衡状态的速度
+                this.aY = 50 // 竖直加速度
+                this.r = 0.5 // 雨滴绽放的初始半径大小
+                this.vR = 0.5 // 半径扩大速度
+                this.endR = 45 + random(-10, 10)
+                // 随机颜色
+                this.color = `rgb(${random(0, 255)}, ${random(0, 255)}, ${random(0, 255)})`
+            },
+            draw: function () {
+                if (this.y < this.endY) {
+                    context.beginPath() // 笔抬起来
+                    context.fillStyle = this.color
+                    context.fillRect(this.x, this.y, 4, 10)
+                } else {
+                    context.beginPath()
+                    context.strokeStyle = this.color
+                    context.arc(this.x, this.y, this.r, 0, Math.PI * 2)
+                    context.stroke()
+                }
+
+            },
+            move: function () {
+                if (this.y < this.endY) {
+                    if (this.vY < this.balanece_v) {
+                        // v1 = v0 + a*t
+                        this.vY += this.aY * frameRate / 1000
+                    }
+                    this.y += this.vY * frameRate / 1000
+                } else {
+                    if (this.r < this.endR) {
+                        this.r += this.vR
+                    } else {
+                        // 雨滴回到顶部位置（初始化）
+                        this.init()
+                    }
+                }
+                this.draw()
+            }
+        }
+        // 生成num个雨滴
+        function createRain(num) {
+            for (var i = 0; i < num; i++) {
+                setTimeout(function () {
+                    var rain = new Rain()
+                    rain.init()
+                    rain.draw()
+                    aRain.push(rain)
+                }, 200 * i + random(0, 100))
+            }
+        }
+        // 生成一个雨滴
+        // createRain(1)
+        let num = Math.round(w / 35)
+        createRain(num)
+        setInterval(function () {
+            // 加一层蒙版
+            context.fillStyle = "rgba(0, 0, 0, 0.05)"
+            context.fillRect(0, 0, w, h)
+            for (var item of aRain) {
+                item.move()
+            }
+        }, frameRate)
+    </script>
+</body>
+
+</html>
